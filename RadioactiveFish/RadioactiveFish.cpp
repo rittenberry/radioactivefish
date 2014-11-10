@@ -1,182 +1,201 @@
-// RadioactiveFish.cpp : Defines the entry point for the application.
-//
-
-#include "stdafx.h"
 #include "RadioactiveFish.h"
+#include "stdafx.h"
+#include <atlbase.h>
+#include <atlwin.h>
+#include <wrl.h>
+#include <d2d1.h>
+#pragma comment(lib, "d2d1")
+using namespace D2D1;
+using namespace Microsoft::WRL;
 
-#define MAX_LOADSTRING 100
-
-// Global Variables:
-HINSTANCE hInst;								// current instance
-TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
-TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
-
-// Forward declarations of functions included in this code module:
-ATOM				MyRegisterClass(HINSTANCE hInstance);
-BOOL				InitInstance(HINSTANCE, int);
-LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
-
-int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
-                     _In_opt_ HINSTANCE hPrevInstance,
-                     _In_ LPTSTR    lpCmdLine,
-                     _In_ int       nCmdShow)
+struct SampleWindow : CWindowImpl<SampleWindow, CWindow, CWinTraits<WS_OVERLAPPEDWINDOW | WS_VISIBLE>>
 {
-	UNREFERENCED_PARAMETER(hPrevInstance);
-	UNREFERENCED_PARAMETER(lpCmdLine);
+	ComPtr<ID2D1Factory> m_factory;
+	ComPtr<ID2D1HwndRenderTarget> m_target;
 
- 	// TODO: Place code here.
-	MSG msg;
-	HACCEL hAccelTable;
+	DECLARE_WND_CLASS_EX(L"Window", CS_HREDRAW | CS_VREDRAW, -1);
 
-	// Initialize global strings
-	LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-	LoadString(hInstance, IDC_RADIOACTIVEFISH, szWindowClass, MAX_LOADSTRING);
-	MyRegisterClass(hInstance);
+	BEGIN_MSG_MAP(SampleWindow)
+		MESSAGE_HANDLER(WM_PAINT, PaintHandler)
+		MESSAGE_HANDLER(WM_DESTROY, DestroyHandler)
+		MESSAGE_HANDLER(WM_SIZE, SizeHandler)
+		MESSAGE_HANDLER(WM_DISPLAYCHANGE, DisplayChangeHandler)
+	END_MSG_MAP()
 
-	// Perform application initialization:
-	if (!InitInstance (hInstance, nCmdShow))
+	LRESULT DisplayChangeHandler(UINT, WPARAM, LPARAM, BOOL &)
 	{
-		return FALSE;
+		Invalidate();
+		return 0;
 	}
 
-	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_RADIOACTIVEFISH));
-
-	// Main message loop:
-	while (GetMessage(&msg, NULL, 0, 0))
+	LRESULT PaintHandler(UINT, WPARAM, LPARAM, BOOL &)
 	{
-		if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
-		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
+		PAINTSTRUCT ps;
+		BeginPaint(&ps);
+		Render();
+		EndPaint(&ps);
+		return 0;
 	}
-
-	return (int) msg.wParam;
-}
-
-
-
-//
-//  FUNCTION: MyRegisterClass()
-//
-//  PURPOSE: Registers the window class.
-//
-ATOM MyRegisterClass(HINSTANCE hInstance)
-{
-	WNDCLASSEX wcex;
-
-	wcex.cbSize = sizeof(WNDCLASSEX);
-
-	wcex.style			= CS_HREDRAW | CS_VREDRAW;
-	wcex.lpfnWndProc	= WndProc;
-	wcex.cbClsExtra		= 0;
-	wcex.cbWndExtra		= 0;
-	wcex.hInstance		= hInstance;
-	wcex.hIcon			= LoadIcon(hInstance, MAKEINTRESOURCE(IDI_RADIOACTIVEFISH));
-	wcex.hCursor		= LoadCursor(NULL, IDC_ARROW);
-	wcex.hbrBackground	= (HBRUSH)(COLOR_WINDOW+1);
-	wcex.lpszMenuName	= MAKEINTRESOURCE(IDC_RADIOACTIVEFISH);
-	wcex.lpszClassName	= szWindowClass;
-	wcex.hIconSm		= LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
-
-	return RegisterClassEx(&wcex);
-}
-
-//
-//   FUNCTION: InitInstance(HINSTANCE, int)
-//
-//   PURPOSE: Saves instance handle and creates main window
-//
-//   COMMENTS:
-//
-//        In this function, we save the instance handle in a global variable and
-//        create and display the main program window.
-//
-BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
-{
-   HWND hWnd;
-
-   hInst = hInstance; // Store instance handle in our global variable
-
-   hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL);
-
-   if (!hWnd)
-   {
-      return FALSE;
-   }
-
-   ShowWindow(hWnd, nCmdShow);
-   UpdateWindow(hWnd);
-
-   return TRUE;
-}
-
-//
-//  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
-//
-//  PURPOSE:  Processes messages for the main window.
-//
-//  WM_COMMAND	- process the application menu
-//  WM_PAINT	- Paint the main window
-//  WM_DESTROY	- post a quit message and return
-//
-//
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	int wmId, wmEvent;
-	PAINTSTRUCT ps;
-	HDC hdc;
-
-	switch (message)
+	LRESULT DestroyHandler(UINT, WPARAM, LPARAM, BOOL &)
 	{
-	case WM_COMMAND:
-		wmId    = LOWORD(wParam);
-		wmEvent = HIWORD(wParam);
-		// Parse the menu selections:
-		switch (wmId)
-		{
-		case IDM_ABOUT:
-			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-			break;
-		case IDM_EXIT:
-			DestroyWindow(hWnd);
-			break;
-		default:
-			return DefWindowProc(hWnd, message, wParam, lParam);
-		}
-		break;
-	case WM_PAINT:
-		hdc = BeginPaint(hWnd, &ps);
-		// TODO: Add any drawing code here...
-		EndPaint(hWnd, &ps);
-		break;
-	case WM_DESTROY:
 		PostQuitMessage(0);
-		break;
-	default:
-		return DefWindowProc(hWnd, message, wParam, lParam);
-	}
-	return 0;
-}
+		return 0;
 
-// Message handler for about box.
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	UNREFERENCED_PARAMETER(lParam);
-	switch (message)
+	}
+	LRESULT SizeHandler(UINT, WPARAM, LPARAM lparam, BOOL &)
 	{
-	case WM_INITDIALOG:
-		return (INT_PTR)TRUE;
-
-	case WM_COMMAND:
-		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
+		if (m_target)
 		{
-			EndDialog(hDlg, LOWORD(wParam));
-			return (INT_PTR)TRUE;
+			if (S_OK != m_target->Resize(SizeU(LOWORD(lparam), HIWORD(lparam))))
+			{
+				m_target.Reset();
+			}
 		}
-		break;
+		return 0;
 	}
-	return (INT_PTR)FALSE;
+
+	void Invalidate()
+	{
+		InvalidateRect(nullptr, false);
+	}
+	void Create()
+	{
+		D2D1_FACTORY_OPTIONS fo = {};
+#ifdef DEBUG
+		fo.debugLevel = D2D1_DEBUG_LEVEL_INFORMATION;
+#endif
+		D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED,
+			fo,
+			m_factory.GetAddressOf());
+		CreateDeviceIndependantResources();
+
+			__super::Create(nullptr, 0, L"title");
+	}
+
+	void CreateDeviceIndependantResources()
+	{
+
+	}
+	void CreateDeviceResources()
+	{
+
+	}
+	void Render()
+	{
+		if (!m_target)
+		{
+			RECT rect;
+			GetClientRect(&rect);
+			auto size = SizeU(rect.right, rect.bottom);
+			
+
+			m_factory->CreateHwndRenderTarget(RenderTargetProperties(), HwndRenderTargetProperties(m_hWnd, size), m_target.GetAddressOf());
+		
+			CreateDeviceResources();
+
+
+		}
+
+		if (!(D2D1_WINDOW_STATE_OCCLUDED & m_target->CheckWindowState()))
+		{
+			m_target->BeginDraw();
+			
+			Draw();
+
+			if (D2DERR_RECREATE_TARGET == m_target->EndDraw())
+			{
+				m_target.Reset();
+			}
+		}
+	}
+
+	void Draw()
+	{
+		m_target->Clear(ColorF(1.0f, 1.0f, 0.0f));
+	}
+
+};
+
+int __stdcall wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
+{
+	SampleWindow window;
+	window.Create();
+
+
+	MSG message;
+	BOOL result;
+
+	while (result = GetMessage(&message, 0, 0, 0))
+	{
+		if (-1 != result)
+		{
+			DispatchMessage(&message);
+		}
+	}
 }
+
+/*
+typedef LRESULT(*message_callback)(HWND, WPARAM, LPARAM);
+
+struct message_handler
+{
+	UINT message;
+	message_callback handler;
+};
+
+static message_handler s_handlers[] =
+{
+	{
+		WM_PAINT, [](HWND window, WPARAM, LPARAM) -> LRESULT
+		{
+			PAINTSTRUCT ps;
+			BeginPaint(window, &ps);
+			EndPaint(window, &ps);
+			return 0;
+		}
+	},
+	{
+		WM_DESTROY, [](HWND window, WPARAM, LPARAM)->LRESULT
+		{
+			PostQuitMessage(0);
+			return 0;
+		}
+	}
+};
+
+int _stdcall wWinMain(HINSTANCE module, HINSTANCE, PWSTR, int)
+{
+	WNDCLASS wc = {};
+	wc.style = CS_HREDRAW | CS_VREDRAW;
+	wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+	wc.hInstance = module;
+	wc.lpszClassName = L"window";
+
+	wc.lpfnWndProc = [](HWND window, UINT message, WPARAM wparam, LPARAM lparam) -> LRESULT
+	{
+		for (auto h = s_handlers; h != s_handlers + _countof(s_handlers); ++h)
+		{
+			if (message == h->message)
+			{
+				return h->handler(window, wparam, lparam);
+			}
+		}
+		return DefWindowProc(window, message, wparam, lparam);
+	};
+
+	RegisterClass(&wc);
+
+	auto hwnd = CreateWindow(wc.lpszClassName, L"Title", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr, module, nullptr);
+
+	MSG message;
+	BOOL result;
+
+	while (result = GetMessage(&message, 0, 0, 0))
+	{
+		if (result != -1)
+		{
+			DispatchMessage(&message);
+		}
+	}
+}
+*/
