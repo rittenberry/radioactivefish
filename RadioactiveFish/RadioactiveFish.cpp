@@ -122,12 +122,19 @@ struct SampleWindow : CWindowImpl<SampleWindow, CWindow, CWinTraits<WS_OVERLAPPE
 
 		auto size = m_target->GetSize();
 
+		m_brush->SetOpacity(1.0f);
+
 		m_brush->SetColor(COLOR_BLACK);
 		m_target->FillRectangle(RectF(100.0f, 100.0f, size.width - 100.0f, 200.0f), m_brush.Get());
 
 		m_brush->SetColor(COLOR_WHITE);
 		auto bw = RectF(100.0f, 300.0f, size.width - 100.0f, 400.0f);
 		m_target->FillRectangle(bw, m_brush.Get());
+
+		m_brush->SetOpacity(0.5f);
+		m_brush->SetColor(COLOR_YELLOW);
+		auto by = RectF(150.0f, 150.0f, size.width - 150.0f, 350.0f);
+		m_target->FillRectangle(by, m_brush.Get());
 	}
 
 };
