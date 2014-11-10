@@ -13,6 +13,8 @@ struct SampleWindow : CWindowImpl<SampleWindow, CWindow, CWinTraits<WS_OVERLAPPE
 	ComPtr<ID2D1Factory> m_factory;
 	ComPtr<ID2D1HwndRenderTarget> m_target;
 	ComPtr<ID2D1SolidColorBrush> m_brush;
+	ComPtr<ID2D1LinearGradientBrush> m_linBrush;
+	ComPtr<ID2D1RadialGradientBrush> m_radBrush;
 	D2D1_COLOR_F const COLOR_BLUE = ColorF( 0.26f, 0.56f, 0.87f, 1.0f );
 	D2D1_COLOR_F const COLOR_YELLOW = ColorF( 0.99f, 0.85f, 0.0f, 1.0f);
 	D2D1_COLOR_F const COLOR_BLACK = ColorF( 0.0f, 0.0f, 0.0f, 1.0f );
@@ -25,7 +27,15 @@ struct SampleWindow : CWindowImpl<SampleWindow, CWindow, CWinTraits<WS_OVERLAPPE
 		MESSAGE_HANDLER(WM_DESTROY, DestroyHandler)
 		MESSAGE_HANDLER(WM_SIZE, SizeHandler)
 		MESSAGE_HANDLER(WM_DISPLAYCHANGE, DisplayChangeHandler)
+		MESSAGE_HANDLER(WM_MOUSEMOVE, MouseMoveHandler)
 	END_MSG_MAP()
+
+	LRESULT MouseMoveHandler(UINT, WPARAM wparam, LPARAM lparam, BOOL &)
+	{
+		MouseMoved(LOWORD(lparam), HIWORD(lparam), wparam);
+		return 0;
+	}
+
 
 	LRESULT DisplayChangeHandler(UINT, WPARAM, LPARAM, BOOL &)
 	{
@@ -84,6 +94,19 @@ struct SampleWindow : CWindowImpl<SampleWindow, CWindow, CWinTraits<WS_OVERLAPPE
 	void CreateDeviceResources()
 	{
 		m_target->CreateSolidColorBrush(COLOR_BLUE, m_brush.ReleaseAndGetAddressOf());
+		
+		D2D1_GRADIENT_STOP stops[] = 
+		{
+			{0.0f, COLOR_WHITE},
+			{1.0f, COLOR_BLUE}
+		};
+		ComPtr<ID2D1GradientStopCollection> collection;
+		m_target->CreateGradientStopCollection(stops, _countof(stops), collection.GetAddressOf());
+		D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES props = {};
+		m_target->CreateLinearGradientBrush(props, collection.Get(), m_linBrush.ReleaseAndGetAddressOf());
+		
+		D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES radProps = {};
+		m_target->CreateRadialGradientBrush(radProps, collection.Get(), m_radBrush.ReleaseAndGetAddressOf());
 	}
 	void Render()
 	{
@@ -122,6 +145,16 @@ struct SampleWindow : CWindowImpl<SampleWindow, CWindow, CWinTraits<WS_OVERLAPPE
 
 		auto size = m_target->GetSize();
 
+		m_linBrush->SetEndPoint(Point2F(size.width, size.height));
+		auto r = RectF(0.0f, 0.0f, size.width, size.height);
+		//m_target->FillRectangle(r, m_linBrush.Get());
+
+		m_radBrush->SetCenter(Point2F(size.width / 2.0f, size.height / 2.0f));
+		m_radBrush->SetRadiusX(size.width / 2.0f);
+		m_radBrush->SetRadiusY(size.height / 2.0f);
+
+		m_target->FillRectangle(r, m_radBrush.Get());
+
 		m_brush->SetOpacity(1.0f);
 
 		m_brush->SetColor(COLOR_BLACK);
@@ -135,6 +168,20 @@ struct SampleWindow : CWindowImpl<SampleWindow, CWindow, CWinTraits<WS_OVERLAPPE
 		m_brush->SetColor(COLOR_YELLOW);
 		auto by = RectF(150.0f, 150.0f, size.width - 150.0f, 350.0f);
 		m_target->FillRectangle(by, m_brush.Get());
+
+
+	}
+
+	void MouseMoved(float x, float y, WPARAM)
+	{
+		if (m_radBrush)
+		{
+
+			auto center = m_radBrush->GetCenter();
+			m_radBrush->SetGradientOriginOffset(Point2F(x - center.x, y - center.y));
+			
+			Invalidate();
+		}
 	}
 
 };
