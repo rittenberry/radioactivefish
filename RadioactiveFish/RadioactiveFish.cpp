@@ -12,6 +12,11 @@ struct SampleWindow : CWindowImpl<SampleWindow, CWindow, CWinTraits<WS_OVERLAPPE
 {
 	ComPtr<ID2D1Factory> m_factory;
 	ComPtr<ID2D1HwndRenderTarget> m_target;
+	ComPtr<ID2D1SolidColorBrush> m_brush;
+	D2D1_COLOR_F const COLOR_BLUE = ColorF( 0.26f, 0.56f, 0.87f, 1.0f );
+	D2D1_COLOR_F const COLOR_YELLOW = ColorF( 0.99f, 0.85f, 0.0f, 1.0f);
+	D2D1_COLOR_F const COLOR_BLACK = ColorF( 0.0f, 0.0f, 0.0f, 1.0f );
+	D2D1_COLOR_F const COLOR_WHITE = ColorF( 1.0f, 1.0f, 1.0f, 1.0f );
 
 	DECLARE_WND_CLASS_EX(L"Window", CS_HREDRAW | CS_VREDRAW, -1);
 
@@ -78,7 +83,7 @@ struct SampleWindow : CWindowImpl<SampleWindow, CWindow, CWinTraits<WS_OVERLAPPE
 	}
 	void CreateDeviceResources()
 	{
-
+		m_target->CreateSolidColorBrush(COLOR_BLUE, m_brush.ReleaseAndGetAddressOf());
 	}
 	void Render()
 	{
@@ -109,9 +114,20 @@ struct SampleWindow : CWindowImpl<SampleWindow, CWindow, CWinTraits<WS_OVERLAPPE
 		}
 	}
 
+
+
 	void Draw()
 	{
-		m_target->Clear(ColorF(1.0f, 1.0f, 0.0f));
+		m_target->Clear(COLOR_BLUE);
+
+		auto size = m_target->GetSize();
+
+		m_brush->SetColor(COLOR_BLACK);
+		m_target->FillRectangle(RectF(100.0f, 100.0f, size.width - 100.0f, 200.0f), m_brush.Get());
+
+		m_brush->SetColor(COLOR_WHITE);
+		auto bw = RectF(100.0f, 300.0f, size.width - 100.0f, 400.0f);
+		m_target->FillRectangle(bw, m_brush.Get());
 	}
 
 };
